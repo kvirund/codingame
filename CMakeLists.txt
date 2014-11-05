@@ -11,5 +11,6 @@ add_subdirectory(easy/temperatures)
 add_subdirectory(easy/ascii.art)
 add_subdirectory(easy/chuck.norris)
 add_subdirectory(easy/mime.type)
+add_subdirectory(easy/defibrillators)
 
 add_definitions(-Wall -g -00)
