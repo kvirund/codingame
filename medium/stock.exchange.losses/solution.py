@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# Author: Anton Gorev aka Veei
+# Date: 2014-11-06
+
 c = int(raw_input())
 data = [int(a) for a in raw_input().split(" ")]
 
