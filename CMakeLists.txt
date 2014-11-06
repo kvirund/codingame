@@ -16,5 +16,6 @@ add_subdirectory(easy/horse.racing.duals)
 
 add_subdirectory(medium/skynet.the.virus)
 add_subdirectory(medium/heat.detector)
+add_subdirectory(medium/the.paranoid.android)
 
 add_definitions(-Wall -g -00)
