@@ -21,5 +21,6 @@ add_subdirectory(medium/indiana.l1)
 add_subdirectory(medium/conway.sequence)
 add_subdirectory(medium/telephone.numbers)
 add_subdirectory(medium/dwarfs)
+add_subdirectory(medium/bender)
 
 add_definitions(-Wall -g -00)
