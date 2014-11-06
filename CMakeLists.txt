@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(codingame)
 
+add_definitions(-Wall -g -O0)
+
 add_subdirectory(easy/onboarding)
 add_subdirectory(easy/skynet.the.chasm)
 add_subdirectory(easy/the.descent)
@@ -31,4 +33,3 @@ add_subdirectory(hard/skynet.strikes.back)
 add_subdirectory(hard/the.labyrinth)
 add_subdirectory(hard/skynet.the.bridge)
 
-add_definitions(-Wall -g -00)

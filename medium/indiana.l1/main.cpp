@@ -57,7 +57,7 @@ int main()
             pos = 1;
         } else
         {
-            std:;cerr << "Invalid position" << std::endl;
+            std::cerr << "Invalid position" << std::endl;
             return 1;
         }
         

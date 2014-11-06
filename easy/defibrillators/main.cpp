@@ -13,7 +13,7 @@ using namespace std;
 
 double get_number(std::string& s)
 {
-    int p = s.find(',');
+    std::string::size_type p = s.find(',');
     if (std::string::npos != p)
     {
         s[p] = '.';
@@ -47,7 +47,7 @@ int main()
                 std::vector<std::string> parts(6);
                 for (int i = 0; i < 6 - 1; i++)
                 {
-                    int pos = line.find(';');
+                    std::string::size_type pos = line.find(';');
                     if (pos == std::string::npos)
                     {
                         //std::cout << "Invalid format: " << line << std::endl;

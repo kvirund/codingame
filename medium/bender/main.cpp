@@ -337,6 +337,9 @@ class CField
                 case EC_WEST:
                     s.direction = EP_WEST;
                     break;
+
+                default:
+                    /* do nothing */;
             }
             return result;
         }

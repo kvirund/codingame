@@ -201,7 +201,7 @@ int main()
             std::cin.ignore();
             
             std::cerr << ROW << std::endl;
-            for (size_t j = 0; j < C; j++)
+            for (int j = 0; j < C; j++)
             {
                 field[i][j] = static_cast<ECell>(ROW[j]);
                 if (EC_START == ROW[j])

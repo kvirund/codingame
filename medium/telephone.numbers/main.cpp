@@ -19,8 +19,8 @@ int solve(const std::set<std::string>& numbers)
         n[count++] = *i;
     }
     
-    int result = n[0].length();
-    int pnl = result;
+    size_t  result = n[0].length();
+    size_t pnl = result;
     for (int k = 1; k < count; k++)
     {
         bool tail = false;

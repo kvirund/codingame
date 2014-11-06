@@ -155,7 +155,7 @@ class CGraph
         
         void dump_weights() const
         {
-            for (int i = 0; i < m_weights.size(); i++)
+            for (size_t i = 0; i < m_weights.size(); i++)
             {
                 std::cerr << "wn #" << i << " is " << m_weights[i] << std::endl;
             }

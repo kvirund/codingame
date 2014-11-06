@@ -32,7 +32,7 @@ std::map<char, int> l;
 bool test_word(const std::string& w, const std::string& letters, int& score)
 {
     std::map<char, int> c;
-    for (int i = 0; i < letters.length(); i++)
+    for (size_t i = 0; i < letters.length(); i++)
     {
         c[letters[i]]++;
     }
@@ -43,7 +43,7 @@ bool test_word(const std::string& w, const std::string& letters, int& score)
     }
 
     score = 0;
-    for (int i = 0; i < w.length(); i++)
+    for (size_t i = 0; i < w.length(); i++)
     {
         if (0 < c[w[i]]--)
         {
@@ -61,7 +61,7 @@ bool test_word(const std::string& w, const std::string& letters, int& score)
 
 int main()
 {
-    for (int i = 0; i < sizeof(weights)/sizeof(weights[0]); i++)
+    for (size_t i = 0; i < sizeof(weights)/sizeof(weights[0]); i++)
     {
         int wl = strlen(weights[i].letters);
         for (int j = 0; j < wl; j++)
