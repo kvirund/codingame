@@ -22,5 +22,6 @@ add_subdirectory(medium/conway.sequence)
 add_subdirectory(medium/telephone.numbers)
 add_subdirectory(medium/dwarfs)
 add_subdirectory(medium/bender)
+add_subdirectory(medium/scrabble)
 
 add_definitions(-Wall -g -00)
