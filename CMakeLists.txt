@@ -27,4 +27,6 @@ add_subdirectory(medium/the.gift)
 add_subdirectory(medium/mayan.calculation)
 add_subdirectory(medium/mars.lander.l2)
 
+add_subdirectory(hard/skynet.strikes.back)
+
 add_definitions(-Wall -g -00)
