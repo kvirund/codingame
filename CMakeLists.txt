@@ -15,5 +15,6 @@ add_subdirectory(easy/defibrillators)
 add_subdirectory(easy/horse.racing.duals)
 
 add_subdirectory(medium/skynet.the.virus)
+add_subdirectory(medium/heat.detector)
 
 add_definitions(-Wall -g -00)
