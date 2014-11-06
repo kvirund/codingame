@@ -25,5 +25,6 @@ add_subdirectory(medium/bender)
 add_subdirectory(medium/scrabble)
 add_subdirectory(medium/the.gift)
 add_subdirectory(medium/mayan.calculation)
+add_subdirectory(medium/mars.lander.l2)
 
 add_definitions(-Wall -g -00)
