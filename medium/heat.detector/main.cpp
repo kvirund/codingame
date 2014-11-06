@@ -1,3 +1,7 @@
+/**
+ * \author Anton Gorev aka Veei
+ * \date 2014-11-06
+ */
 #include <iostream>
 #include <string>
 #include <vector>
