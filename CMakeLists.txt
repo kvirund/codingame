@@ -28,5 +28,6 @@ add_subdirectory(medium/mayan.calculation)
 add_subdirectory(medium/mars.lander.l2)
 
 add_subdirectory(hard/skynet.strikes.back)
+add_subdirectory(hard/the.labyrinth)
 
 add_definitions(-Wall -g -00)
