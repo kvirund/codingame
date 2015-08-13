@@ -40,6 +40,7 @@ add_subdirectory(hard/cgx.formatter)
 add_subdirectory(hard/tan.network)
 add_subdirectory(hard/genome.sequencing)
 add_subdirectory(hard/surface)
+add_subdirectory(hard/bender.the.money.machine)
 
 add_subdirectory(other/winamax)
 
