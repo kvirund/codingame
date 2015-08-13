@@ -32,6 +32,7 @@ add_subdirectory(medium/mars.lander.l2)
 add_subdirectory(hard/skynet.strikes.back)
 add_subdirectory(hard/the.labyrinth)
 add_subdirectory(hard/skynet.the.bridge)
+add_subdirectory(hard/the.paranoid.android)
 
 add_subdirectory(other/winamax)
 
