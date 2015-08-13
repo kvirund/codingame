@@ -34,3 +34,5 @@ add_subdirectory(hard/the.labyrinth)
 add_subdirectory(hard/skynet.the.bridge)
 
 add_subdirectory(other/winamax)
+
+add_subdirectory(optimization/bilbo's.forest)
