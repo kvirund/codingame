@@ -33,7 +33,6 @@ add_subdirectory(hard/skynet.strikes.back)
 add_subdirectory(hard/the.labyrinth)
 add_subdirectory(hard/skynet.the.bridge)
 add_subdirectory(hard/the.paranoid.android)
-add_subdirectory(hard/indiana.level.1)
 
 add_subdirectory(other/winamax)
 
