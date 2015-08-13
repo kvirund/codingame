@@ -39,6 +39,7 @@ add_subdirectory(hard/roller.coaster)
 add_subdirectory(hard/cgx.formatter)
 add_subdirectory(hard/tan.network)
 add_subdirectory(hard/genome.sequencing)
+add_subdirectory(hard/surface)
 
 add_subdirectory(other/winamax)
 
