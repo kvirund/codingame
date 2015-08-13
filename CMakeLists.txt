@@ -35,6 +35,7 @@ add_subdirectory(hard/skynet.the.bridge)
 add_subdirectory(hard/the.paranoid.android)
 add_subdirectory(hard/vox.codei)
 add_subdirectory(hard/super.computer)
+add_subdirectory(hard/roller.coaster)
 
 add_subdirectory(other/winamax)
 
