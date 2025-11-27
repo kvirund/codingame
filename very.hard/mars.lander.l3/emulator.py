@@ -22,8 +22,8 @@ Landing conditions:
 
 import json
 import math
-import os
 import sys
+import subprocess
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Dict, Any, TextIO
 
@@ -169,6 +169,26 @@ def deg_to_rad(deg: float) -> float:
     return deg * math.pi / 180
 
 
+def get_surface_y_for_landing_zone(surface_obj, x: float) -> float:
+    """
+    Get the Y coordinate of the surface at a given X position.
+    For caves: if x is within landing zone, return LZ height (floor), not roof!
+    """
+    # Check if within landing zone first
+    lz = surface_obj.landing_zone
+    if lz.x1 <= x <= lz.x2:
+        return lz.y  # Return floor height for cave interiors
+
+    # Otherwise search normally
+    for i in range(len(surface_obj.points) - 1):
+        p1 = surface_obj.points[i]
+        p2 = surface_obj.points[i + 1]
+        if p1.x <= x <= p2.x:
+            t = (x - p1.x) / (p2.x - p1.x)
+            return p1.y + t * (p2.y - p1.y)
+    return 0
+
+
 def get_surface_y(surface: List[Point], x: float) -> float:
     """Get the Y coordinate of the surface at a given X position"""
     for i in range(len(surface) - 1):
@@ -292,7 +312,7 @@ def simulate_turn_float(fstate: FloatState, requested: Control, surface: Surface
         new_state.x, new_state.y
     )
 
-    surface_y = get_surface_y(surface.points, new_state.x)
+    surface_y = get_surface_y_for_landing_zone(surface, new_state.x)
     below_surface = new_state.y <= surface_y
 
     if collision or below_surface:
@@ -595,6 +615,83 @@ def validate_against_trace(filepath: str) -> Tuple[int, int]:
     return correct, errors
 
 
+def run_program(program_cmd: List[str], test_file: str, max_turns: int = 500, verbose: bool = False) -> Tuple[str, List[State], int]:
+    """
+    Run a program through the emulator via bidirectional stdio.
+
+    Args:
+        program_cmd: Command to run the program (e.g., ['python', 'solution.py'])
+        test_file: Path to test case JSON file
+        max_turns: Maximum number of turns before timeout
+        verbose: Print each turn's state and control
+
+    Returns:
+        Tuple of (result_status, trajectory, turns_used)
+    """
+    surface, initial_state = load_test_case(test_file)
+
+    # Start the subprocess
+    proc = subprocess.Popen(
+        program_cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1  # Line buffered
+    )
+
+    try:
+        # Send surface data
+        proc.stdin.write(f"{len(surface.points)}\n")
+        for p in surface.points:
+            proc.stdin.write(f"{int(p.x)} {int(p.y)}\n")
+        proc.stdin.flush()
+
+        fstate = FloatState.from_state(initial_state)
+        trajectory = [initial_state]
+
+        for turn in range(max_turns):
+            # Send current state
+            state = fstate.to_int_state()
+            state_line = f"{state.x} {state.y} {state.hSpeed} {state.vSpeed} {state.fuel} {state.rotate} {state.power}"
+            proc.stdin.write(state_line + "\n")
+            proc.stdin.flush()
+
+            # Read control from program
+            control_line = proc.stdout.readline().strip()
+            if not control_line:
+                # Program ended or crashed
+                stderr = proc.stderr.read()
+                if stderr:
+                    print(f"Program stderr: {stderr}", file=sys.stderr)
+                return 'program_error', trajectory, turn
+
+            try:
+                control = Control.parse(control_line)
+            except (ValueError, IndexError) as e:
+                print(f"Invalid control output: '{control_line}' - {e}", file=sys.stderr)
+                return 'invalid_output', trajectory, turn
+
+            if verbose:
+                print(f"Turn {turn}: state=({state.x}, {state.y}, {state.hSpeed}, {state.vSpeed}) -> control=({control.rotate}, {control.power})")
+
+            # Simulate
+            fstate, result = simulate_turn_float(fstate, control, surface)
+            trajectory.append(result.state)
+
+            if result.status == 'landed':
+                return 'landed', trajectory, turn + 1
+            elif result.status == 'crashed':
+                return f'crashed: {result.reason}', trajectory, turn + 1
+
+        return 'timeout', trajectory, max_turns
+
+    finally:
+        proc.stdin.close()
+        proc.terminate()
+        proc.wait(timeout=1)
+
+
 def main():
     import argparse
 
@@ -603,9 +700,55 @@ def main():
     parser.add_argument('--run', type=str, help='Run emulator with test case file')
     parser.add_argument('--float', action='store_true', help='Test float mode (internal float state)')
     parser.add_argument('--float32', action='store_true', help='Test float32 mode')
+    parser.add_argument('--test', type=str, nargs='+',
+                        help='Test a program: --test "python solution.py" test_case.json')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
     args = parser.parse_args()
 
-    if args.validate:
+    if args.test:
+        # Parse --test arguments: program command(s) and test file
+        # Format: --test program [args...] test_case.json
+        # The last argument is always the test file
+        if len(args.test) < 2:
+            print("Usage: --test <program> [args...] <test_case.json>")
+            sys.exit(1)
+
+        test_file = args.test[-1]
+        program_cmd = args.test[:-1]
+
+        # If program is a single string with spaces, split it
+        if len(program_cmd) == 1 and ' ' in program_cmd[0]:
+            program_cmd = program_cmd[0].split()
+
+        print(f"Testing program: {' '.join(program_cmd)}")
+        print(f"Test case: {test_file}")
+        print()
+
+        result, trajectory, turns = run_program(program_cmd, test_file, verbose=args.verbose)
+
+        print(f"\n{'='*50}")
+        print(f"Result: {result}")
+        print(f"Turns: {turns}")
+
+        if trajectory:
+            final = trajectory[-1]
+            print(f"Final state: pos=({final.x}, {final.y}), "
+                  f"speed=({final.hSpeed}, {final.vSpeed}), "
+                  f"angle={final.rotate}, fuel={final.fuel}")
+
+        if result == 'landed':
+            print("\n[OK] SUCCESS!")
+            sys.exit(0)
+        else:
+            print("\n[FAIL] FAILED")
+            # Show last 5 states
+            print("\nLast 5 states:")
+            for i, s in enumerate(trajectory[-5:]):
+                print(f"  {len(trajectory)-5+i}: pos=({s.x}, {s.y}), "
+                      f"speed=({s.hSpeed}, {s.vSpeed}), "
+                      f"angle={s.rotate}, power={s.power}")
+            sys.exit(1)
+    elif args.validate:
         validate_against_trace(args.validate)
     elif args.run:
         surface, state = load_test_case(args.run)
@@ -616,28 +759,23 @@ def main():
             print(f"Reason: {result.reason}", file=sys.stderr)
     elif args.float or args.float32:
         # Test float modes
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        tc1 = os.path.join(script_dir, 'test_case_01.json')
-        tc2 = os.path.join(script_dir, 'test_case_02.json')
+        tc1 = 'c:\\dev\\codingame\\workbench\\test_case_01.json'
+        tc2 = 'c:\\dev\\codingame\\workbench\\test_case_02.json'
         validate_float_mode(tc1, use_float32=args.float32)
         validate_float_mode(tc2, use_float32=args.float32)
     else:
         # Default: validate both test cases with all modes
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        tc1 = os.path.join(script_dir, 'test_case_01.json')
-        tc2 = os.path.join(script_dir, 'test_case_02.json')
-
         print("=" * 60)
         print("Mode 1: Integer state (reset each turn)")
         print("=" * 60)
-        validate_against_trace(tc1)
-        validate_against_trace(tc2)
+        validate_against_trace('c:\\dev\\codingame\\workbench\\test_case_01.json')
+        validate_against_trace('c:\\dev\\codingame\\workbench\\test_case_02.json')
 
         print("\n" + "=" * 60)
         print("Mode 2: Float64 internal state (accumulated)")
         print("=" * 60)
-        validate_float_mode(tc1, use_float32=False)
-        validate_float_mode(tc2, use_float32=False)
+        validate_float_mode('c:\\dev\\codingame\\workbench\\test_case_01.json', use_float32=False)
+        validate_float_mode('c:\\dev\\codingame\\workbench\\test_case_02.json', use_float32=False)
 
 
 if __name__ == '__main__':
