@@ -1,0 +1,10 @@
+{
+  "name": "Exact nb of jumps",
+  "width": 24,
+  "height": 24,
+  "max_jumps": 15,
+  "start_x": 22,
+  "start_y": 13,
+  "bomb_x": 9,
+  "bomb_y": 18
+}

@@ -1,0 +1,10 @@
+{
+  "name": "A lot of windows",
+  "width": 1000,
+  "height": 1000,
+  "max_jumps": 27,
+  "start_x": 501,
+  "start_y": 501,
+  "bomb_x": 728,
+  "bomb_y": 508
+}

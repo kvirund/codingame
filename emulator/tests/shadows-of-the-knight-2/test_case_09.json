@@ -1,0 +1,10 @@
+{
+  "name": "So many windows (alt)",
+  "width": 8000,
+  "height": 8000,
+  "max_jumps": 31,
+  "start_x": 3200,
+  "start_y": 2100,
+  "bomb_x": 1,
+  "bomb_y": 1
+}

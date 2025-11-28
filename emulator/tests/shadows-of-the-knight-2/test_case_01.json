@@ -1,0 +1,10 @@
+{
+  "name": "A lot of jumps",
+  "width": 5,
+  "height": 16,
+  "max_jumps": 80,
+  "start_x": 1,
+  "start_y": 5,
+  "bomb_x": 4,
+  "bomb_y": 10
+}

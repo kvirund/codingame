@@ -1,0 +1,10 @@
+{
+  "name": "Tower",
+  "width": 1,
+  "height": 100,
+  "max_jumps": 12,
+  "start_x": 0,
+  "start_y": 98,
+  "bomb_x": 0,
+  "bomb_y": 97
+}

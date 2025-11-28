@@ -1,0 +1,10 @@
+{
+  "name": "More windows",
+  "width": 50,
+  "height": 50,
+  "max_jumps": 16,
+  "start_x": 17,
+  "start_y": 29,
+  "bomb_x": 27,
+  "bomb_y": 32
+}
