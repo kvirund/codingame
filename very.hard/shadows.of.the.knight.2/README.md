@@ -1,5 +1,7 @@
 # Shadows of the Knight Episode 2 - Solution Approach
 
+> ⚠️ **Disclaimer**: This puzzle was solved with significant assistance from Claude Opus 4.5.
+
 This document describes the approach I used to solve the Shadows of the Knight Episode 2 puzzle on CodinGame. I'm not providing the specific implementation code here, just describing the methodology that worked.
 
 ## Problem Overview
