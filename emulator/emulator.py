@@ -128,7 +128,11 @@ def main():
                 if not trace:
                     continue
 
-                mismatches, _, _ = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
+                # Use multi-agent replay if trace has "commands" field (multi-agent format)
+                if trace.get("cg_trace") and trace["cg_trace"] and "commands" in trace["cg_trace"][0]:
+                    mismatches, _, _ = runner.run_replay_multi(model, trace_name, trace, verbose=args.verbose)
+                else:
+                    mismatches, _, _ = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
 
                 if mismatches:
                     print(f"  {trace_name}: MISMATCH at turn {mismatches[0][0]}")
@@ -162,7 +166,11 @@ def main():
             if not trace:
                 continue
 
-            mismatches, _, _ = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
+            # Use multi-agent replay if trace has "commands" field (multi-agent format)
+            if trace.get("cg_trace") and trace["cg_trace"] and "commands" in trace["cg_trace"][0]:
+                mismatches, _, _ = runner.run_replay_multi(model, trace_name, trace, verbose=args.verbose)
+            else:
+                mismatches, _, _ = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
 
             if mismatches:
                 print(f"  {trace_name}: MISMATCH at turn {mismatches[0][0]}")
