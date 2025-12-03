@@ -1,0 +1,97 @@
+{
+  "test_name": "test_01",
+  "order": [0, 1],
+  "cg_trace": [
+    {
+      "turn": 0,
+      "commands": [null, null],
+      "proteins": {"0": {"A": 10, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": []
+    },
+    {
+      "turn": 1,
+      "commands": ["GROW 2 2 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 9, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 2, "y": 6, "type": "BASIC", "owner": 0, "organId": 3, "organDir": "N", "organParentId": 2, "organRootId": 2}]
+    },
+    {
+      "turn": 2,
+      "commands": ["GROW 3 3 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 8, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 3, "y": 6, "type": "BASIC", "owner": 0, "organId": 4, "organDir": "N", "organParentId": 3, "organRootId": 2}]
+    },
+    {
+      "turn": 3,
+      "commands": ["GROW 4 4 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 10, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 4, "y": 6, "type": "BASIC", "owner": 0, "organId": 5, "organDir": "N", "organParentId": 4, "organRootId": 2}],
+      "absorbed": [{"x": 4, "y": 6, "type": "A"}]
+    },
+    {
+      "turn": 4,
+      "commands": ["GROW 5 4 5 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 9, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 4, "y": 5, "type": "BASIC", "owner": 0, "organId": 6, "organDir": "N", "organParentId": 5, "organRootId": 2}]
+    },
+    {
+      "turn": 5,
+      "commands": ["GROW 6 5 5 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 8, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 5, "y": 5, "type": "BASIC", "owner": 0, "organId": 7, "organDir": "N", "organParentId": 6, "organRootId": 2}]
+    },
+    {
+      "turn": 6,
+      "commands": ["GROW 5 5 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 7, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 5, "y": 6, "type": "BASIC", "owner": 0, "organId": 8, "organDir": "N", "organParentId": 5, "organRootId": 2}]
+    },
+    {
+      "turn": 7,
+      "commands": ["GROW 8 6 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 6, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 6, "y": 6, "type": "BASIC", "owner": 0, "organId": 9, "organDir": "N", "organParentId": 8, "organRootId": 2}]
+    },
+    {
+      "turn": 8,
+      "commands": ["GROW 9 6 7 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 5, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 6, "y": 7, "type": "BASIC", "owner": 0, "organId": 10, "organDir": "N", "organParentId": 9, "organRootId": 2}]
+    },
+    {
+      "turn": 9,
+      "commands": ["GROW 9 7 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 4, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 7, "y": 6, "type": "BASIC", "owner": 0, "organId": 11, "organDir": "N", "organParentId": 9, "organRootId": 2}]
+    },
+    {
+      "turn": 10,
+      "commands": ["GROW 11 7 5 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 3, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 7, "y": 5, "type": "BASIC", "owner": 0, "organId": 12, "organDir": "N", "organParentId": 11, "organRootId": 2}]
+    },
+    {
+      "turn": 11,
+      "commands": ["GROW 8 5 7 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 2, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 5, "y": 7, "type": "BASIC", "owner": 0, "organId": 13, "organDir": "N", "organParentId": 8, "organRootId": 2}]
+    },
+    {
+      "turn": 12,
+      "commands": ["GROW 11 8 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 1, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 8, "y": 6, "type": "BASIC", "owner": 0, "organId": 14, "organDir": "N", "organParentId": 11, "organRootId": 2}]
+    },
+    {
+      "turn": 13,
+      "commands": ["GROW 14 8 7 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 0, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 8, "y": 7, "type": "BASIC", "owner": 0, "organId": 15, "organDir": "N", "organParentId": 14, "organRootId": 2}]
+    },
+    {
+      "turn": 14,
+      "commands": ["WAIT", "WAIT"],
+      "proteins": {"0": {"A": 0, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": []
+    }
+  ]
+}

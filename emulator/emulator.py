@@ -5,6 +5,9 @@ Usage:
     python emulator.py --list-models              # List available game models
     python emulator.py --model mars_lander --list # List test cases for a model
     python emulator.py --test python sol.py cave_correct  # Run a test
+    python emulator.py --model the_fall --replay test_02  # Replay trace
+    python emulator.py --model the_fall --test-traces     # Test all traces for model
+    python emulator.py --test-all-traces                  # Test all traces for all models
 """
 import argparse
 import sys
@@ -27,6 +30,14 @@ def main():
                         help='List available game models')
     parser.add_argument('--timeout', '-t', type=int, default=150,
                         help='Timeout per turn in milliseconds (default: 150)')
+    parser.add_argument('--debug', '-d', action='store_true',
+                        help='Show stderr from the program (for debugging)')
+    parser.add_argument('--replay', type=str, metavar='TEST_NAME',
+                        help='Replay trace file and compare with CG')
+    parser.add_argument('--test-traces', action='store_true',
+                        help='Test all traces for selected model')
+    parser.add_argument('--test-all-traces', action='store_true',
+                        help='Test all traces for all models')
     args = parser.parse_args()
 
     if args.list_models:
@@ -71,7 +82,7 @@ def main():
         try:
             result, trajectory, turns = runner.run_program(
                 model, program_cmd, test_name, verbose=args.verbose,
-                turn_timeout_ms=args.timeout
+                turn_timeout_ms=args.timeout, debug=args.debug
             )
         except ValueError as e:
             print(f"Error: {e}", file=sys.stderr)
@@ -94,6 +105,109 @@ def main():
             for i, s in enumerate(trajectory[-5:]):
                 print(f"  {len(trajectory)-5+i}: {model.format_result(s)}")
             sys.exit(1)
+
+    elif args.test_all_traces:
+        # Test all traces for all models
+        total_passed = 0
+        total_failed = 0
+
+        for model_name, desc in models.list_models().items():
+            model = models.get_model(model_name)
+            traces = model.list_traces()
+
+            print(f"\n=== {model_name} ({desc}) ===")
+
+            if not traces:
+                print("  (no traces)")
+                continue
+
+            passed = 0
+            failed = 0
+            for trace_name in traces:
+                trace = model.load_trace(trace_name)
+                if not trace:
+                    continue
+
+                mismatches, _, _ = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
+
+                if mismatches:
+                    print(f"  {trace_name}: MISMATCH at turn {mismatches[0][0]}")
+                    failed += 1
+                else:
+                    print(f"  {trace_name}: OK")
+                    passed += 1
+
+            print(f"Results: {passed}/{passed + failed} passed")
+            total_passed += passed
+            total_failed += failed
+
+        print(f"\n{'='*50}")
+        print(f"TOTAL: {total_passed}/{total_passed + total_failed} passed")
+        sys.exit(0 if total_failed == 0 else 1)
+
+    elif args.test_traces:
+        # Test all traces for selected model
+        traces = model.list_traces()
+
+        print(f"Testing traces for {model.name}:")
+
+        if not traces:
+            print("  (no traces)")
+            sys.exit(0)
+
+        passed = 0
+        failed = 0
+        for trace_name in traces:
+            trace = model.load_trace(trace_name)
+            if not trace:
+                continue
+
+            mismatches, _, _ = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
+
+            if mismatches:
+                print(f"  {trace_name}: MISMATCH at turn {mismatches[0][0]}")
+                if args.verbose:
+                    for turn, diffs in mismatches:
+                        for diff in diffs:
+                            print(f"    T{turn}: {diff}")
+                failed += 1
+            else:
+                print(f"  {trace_name}: OK")
+                passed += 1
+
+        print(f"\nResults: {passed}/{passed + failed} passed")
+        sys.exit(0 if failed == 0 else 1)
+
+    elif args.replay:
+        # Replay a single trace
+        trace_name = args.replay
+        trace = model.load_trace(trace_name)
+
+        if not trace:
+            print(f"Error: Trace '{trace_name}' not found for model {model.name}", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Model: {model.name}")
+        print(f"Trace: {trace_name}")
+        print()
+
+        # Use multi-agent replay if trace has "commands" field (multi-agent format)
+        if trace.get("cg_trace") and trace["cg_trace"] and "commands" in trace["cg_trace"][0]:
+            mismatches, trajectory, turns = runner.run_replay_multi(model, trace_name, trace, verbose=args.verbose)
+        else:
+            mismatches, trajectory, turns = runner.run_replay(model, trace_name, trace, verbose=args.verbose)
+
+        print(f"\n{'='*50}")
+        if mismatches:
+            print(f"Result: MISMATCH")
+            print(f"First mismatch at turn {mismatches[0][0]}:")
+            for diff in mismatches[0][1]:
+                print(f"  {diff}")
+            sys.exit(1)
+        else:
+            print(f"Result: OK - all {turns} states match")
+            sys.exit(0)
+
     else:
         parser.print_help()
 
