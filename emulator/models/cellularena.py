@@ -43,6 +43,18 @@ class Environment:
     initial_proteins: Dict[int, Dict[str, int]]
 
 
+# Direction vectors for HARVESTER facing
+DIR_VECTORS = {
+    "N": (0, -1),
+    "S": (0, 1),
+    "W": (-1, 0),
+    "E": (1, 0)
+}
+
+# Organ types that are valid
+ORGAN_TYPES = {"ROOT", "BASIC", "HARVESTER", "TENTACLE", "SPORER"}
+
+
 @dataclass
 class Control:
     """Player's output command."""
@@ -52,6 +64,7 @@ class Control:
     x: int = 0
     y: int = 0
     organ_type: str = "BASIC"
+    organ_dir: str = "N"  # Direction for HARVESTER, TENTACLE, SPORER
 
     @staticmethod
     def parse(line: str, player_id: int = 0) -> 'Control':
@@ -66,13 +79,16 @@ class Control:
             x = int(parts[2])
             y = int(parts[3])
             organ_type = parts[4]
+            # Direction is optional, defaults to N
+            organ_dir = parts[5] if len(parts) >= 6 else "N"
             return Control(
                 player_id=player_id,
                 action="GROW",
                 organ_id=organ_id,
                 x=x,
                 y=y,
-                organ_type=organ_type
+                organ_type=organ_type,
+                organ_dir=organ_dir
             )
         else:
             raise ValueError(f"Invalid command: {line}")
@@ -264,11 +280,19 @@ class CellularenaModel(GameModel):
             if target.type in ("A", "B", "C", "D"):
                 absorbed_protein = target.type
 
-        # Check proteins (BASIC costs 1 A)
+        # Check proteins cost based on organ type
         cost = {"A": 0, "B": 0, "C": 0, "D": 0}
         if control.organ_type == "BASIC":
             cost["A"] = 1
-        # Add more organ types as needed
+        elif control.organ_type == "HARVESTER":
+            cost["C"] = 1
+            cost["D"] = 1
+        elif control.organ_type == "TENTACLE":
+            cost["B"] = 1
+            cost["C"] = 1
+        elif control.organ_type == "SPORER":
+            cost["B"] = 1
+            cost["D"] = 1
 
         player_proteins = state.proteins[player_id]
         for ptype, amount in cost.items():
@@ -282,14 +306,14 @@ class CellularenaModel(GameModel):
         if absorbed_protein:
             new_entities = [e for e in new_entities if not (e.x == control.x and e.y == control.y)]
 
-        # Create new organ
+        # Create new organ with direction
         new_organ = Entity(
             x=control.x,
             y=control.y,
             type=control.organ_type,
             owner=player_id,
             organ_id=state.next_organ_id,
-            organ_dir="N",
+            organ_dir=control.organ_dir,
             organ_parent_id=control.organ_id,
             organ_root_id=parent.organ_root_id
         )
@@ -313,6 +337,41 @@ class CellularenaModel(GameModel):
 
         return new_state, None
 
+    def _apply_harvest(self, state: State, env: Environment) -> State:
+        """Apply harvest phase - HARVESTERs collect proteins from facing sources."""
+        new_proteins = {p: v.copy() for p, v in state.proteins.items()}
+
+        # Build a set of protein source positions
+        protein_sources = {}
+        for e in state.entities:
+            if e.type in ("A", "B", "C", "D"):
+                protein_sources[(e.x, e.y)] = e.type
+
+        # Track which sources each player has already harvested (1 per source per player)
+        harvested = {pid: set() for pid in new_proteins.keys()}
+
+        # Process all HARVESTERs
+        for e in state.entities:
+            if e.type == "HARVESTER" and e.owner >= 0:
+                # Get facing direction
+                dx, dy = DIR_VECTORS.get(e.organ_dir, (0, 0))
+                target_x, target_y = e.x + dx, e.y + dy
+
+                # Check if facing a protein source
+                if (target_x, target_y) in protein_sources:
+                    ptype = protein_sources[(target_x, target_y)]
+                    # Each player gets 1 protein per source per turn (even with multiple harvesters)
+                    if (target_x, target_y) not in harvested[e.owner]:
+                        new_proteins[e.owner][ptype] += 1
+                        harvested[e.owner].add((target_x, target_y))
+
+        return State(
+            entities=state.entities,
+            proteins=new_proteins,
+            next_organ_id=state.next_organ_id,
+            turn=state.turn
+        )
+
     def simulate(
         self,
         state: State,
@@ -335,6 +394,9 @@ class CellularenaModel(GameModel):
                     # Log error but continue (invalid command = skip)
                     pass
 
+        # Apply harvest phase at end of turn
+        current_state = self._apply_harvest(current_state, env)
+
         # Update turn
         new_state = State(
             entities=current_state.entities,
@@ -355,9 +417,8 @@ class CellularenaModel(GameModel):
         return new_state, SimResult('running')
 
     def format_result(self, state: State) -> str:
-        organ_count = sum(1 for e in state.entities if e.type in ("ROOT", "BASIC"))
-        p0_organs = sum(1 for e in state.entities if e.type in ("ROOT", "BASIC") and e.owner == 0)
-        p1_organs = sum(1 for e in state.entities if e.type in ("ROOT", "BASIC") and e.owner == 1)
+        p0_organs = sum(1 for e in state.entities if e.type in ORGAN_TYPES and e.owner == 0)
+        p1_organs = sum(1 for e in state.entities if e.type in ORGAN_TYPES and e.owner == 1)
         return f"Turn {state.turn}: P0={p0_organs} organs, P1={p1_organs} organs"
 
     def get_traces_dir(self):
