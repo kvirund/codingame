@@ -44,11 +44,14 @@ python emulator.py -t 2000 --model there_is_no_spoon --test ./solution test_case
 
 ## Supported Games
 
-| Model | Game | Difficulty |
-|-------|------|------------|
-| `mars_lander` | Mars Lander Episode 3 | Very Hard |
-| `shadows_of_the_knight` | Shadows of the Knight Episode 2 | Very Hard |
-| `there_is_no_spoon` | There is no Spoon Episode 2 | Very Hard |
+| Model | Game | Type | Difficulty |
+|-------|------|------|------------|
+| `mars_lander` | Mars Lander Episode 3 | Single-agent | Very Hard |
+| `shadows_of_the_knight_1` | Shadows of the Knight Episode 1 | Single-agent | Medium |
+| `shadows_of_the_knight_2` | Shadows of the Knight Episode 2 | Single-agent | Very Hard |
+| `there_is_no_spoon` | There is no Spoon Episode 2 | Single-agent | Very Hard |
+| `the_fall` | The Fall Episode 3 | Single-agent | Very Hard |
+| `cellularena` | Cellularena (Winter Challenge 2024) | Multi-agent | Contest |
 
 ## Project Structure
 
@@ -60,12 +63,20 @@ emulator/
 │   ├── __init__.py          # Model registry
 │   ├── base.py              # GameModel abstract base class
 │   ├── mars_lander.py       # Mars Lander physics simulation
-│   ├── shadows_of_the_knight.py  # Binary search puzzle logic
-│   └── there_is_no_spoon.py # Hashiwokakero puzzle logic
-└── tests/
-    ├── mars_lander/         # 7 test cases
-    ├── shadows-of-the-knight-2/  # 9 test cases
-    └── there-is-no-spoon-2/ # 14 test cases
+│   ├── shadows_of_the_knight_1.py  # Binary search (Episode 1)
+│   ├── shadows_of_the_knight_2.py  # Binary search (Episode 2)
+│   ├── there_is_no_spoon.py # Hashiwokakero puzzle logic
+│   ├── the_fall.py          # Rotating tiles puzzle
+│   └── cellularena.py       # Multi-agent organism growth game
+├── tests/
+│   ├── mars_lander/         # 7 test cases
+│   ├── shadows-of-the-knight-1/  # Test cases
+│   ├── shadows-of-the-knight-2/  # 9 test cases
+│   ├── there-is-no-spoon-2/ # 14 test cases
+│   ├── the-fall-3/          # Test cases
+│   └── cellularena/         # Test cases
+└── traces/
+    └── cellularena/         # Game traces for replay validation
 ```
 
 ## Adding New Games
@@ -201,12 +212,55 @@ Final: x=2734, y=151, hSpeed=2, vSpeed=-39
 [OK] SUCCESS!
 ```
 
+## Multi-Agent Games
+
+Some games (like Cellularena) support multiple agents competing against each other.
+
+### Replay Mode
+
+Test emulator accuracy by replaying recorded game traces:
+
+```bash
+# Replay a specific trace
+python emulator.py --model cellularena --replay test_01 -v
+
+# Test all traces for a model
+python emulator.py --model cellularena --test-traces
+
+# Test all traces for all models
+python emulator.py --test-all-traces
+```
+
+### Trace Format (Multi-Agent)
+
+```json
+{
+  "test_name": "test_01",
+  "order": [0, 1],
+  "cg_trace": [
+    {
+      "turn": 0,
+      "commands": [null, null],
+      "proteins": {"0": {"A": 10, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": []
+    },
+    {
+      "turn": 1,
+      "commands": ["GROW 2 2 6 BASIC", "WAIT"],
+      "proteins": {"0": {"A": 9, "B": 0, "C": 0, "D": 0}, "1": {"A": 10, "B": 0, "C": 0, "D": 0}},
+      "new_organs": [{"x": 2, "y": 6, "type": "BASIC", "owner": 0, "organId": 3}]
+    }
+  ]
+}
+```
+
 ## Tips
 
 - **Test locally first** - Catch bugs without CodinGame's slow feedback loop
 - **Use verbose mode** - `-v` flag shows each turn for debugging
 - **Adjust timeout** - Some solutions need more time, use `-t 5000` for 5 seconds
 - **Test edge cases** - The hardest test cases often reveal subtle bugs
+- **Replay traces** - Validate emulator accuracy against CodinGame recordings
 
 ## License
 
