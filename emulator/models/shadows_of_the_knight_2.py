@@ -9,6 +9,7 @@ from .base import GameModel, SimResult
 
 
 TESTS_DIR = Path(__file__).parent.parent / "tests" / "shadows-of-the-knight-2"
+TRACES_DIR = Path(__file__).parent.parent / "traces" / "shadows-of-the-knight-2"
 
 
 def load_test_cases_from_files() -> dict:
@@ -87,10 +88,10 @@ def get_direction(prev_x: int, prev_y: int, curr_x: int, curr_y: int,
         return "SAME"
 
 
-class ShadowsOfTheKnightModel(GameModel):
+class ShadowsOfTheKnight2Model(GameModel):
     """Shadows of the Knight Episode 2 game model."""
 
-    name = "shadows_of_the_knight"
+    name = "shadows_of_the_knight_2"
     description = "Shadows of the Knight Episode 2"
 
     def __init__(self):
@@ -193,3 +194,18 @@ class ShadowsOfTheKnightModel(GameModel):
 
     def format_result(self, state: State) -> str:
         return f"pos=({state.x}, {state.y}), turn={state.turn}"
+
+    def get_traces_dir(self):
+        return TRACES_DIR
+
+    def compare_state(self, state: State, expected: dict) -> List[str]:
+        """Compare state with expected trace entry."""
+        mismatches = []
+
+        exp_pos = expected.get("pos", [])
+        if exp_pos:
+            actual = [state.x, state.y]
+            if actual != exp_pos:
+                mismatches.append(f"pos: got {actual}, expected {exp_pos}")
+
+        return mismatches

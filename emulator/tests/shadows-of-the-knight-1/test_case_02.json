@@ -1,0 +1,10 @@
+{
+    "name": "Less jumps",
+    "width": 25,
+    "height": 33,
+    "max_jumps": 49,
+    "start_x": 2,
+    "start_y": 29,
+    "bomb_x": 24,
+    "bomb_y": 2
+}

@@ -38,6 +38,8 @@ def main():
                         help='Test all traces for selected model')
     parser.add_argument('--test-all-traces', action='store_true',
                         help='Test all traces for all models')
+    parser.add_argument('--agents', '-a', type=str, nargs='+', metavar='PROGRAM',
+                        help='Programs for multi-agent games (1-4). Last program is reused if fewer than players.')
     args = parser.parse_args()
 
     if args.list_models:
@@ -82,6 +84,62 @@ def main():
         try:
             result, trajectory, turns = runner.run_program(
                 model, program_cmd, test_name, verbose=args.verbose,
+                turn_timeout_ms=args.timeout, debug=args.debug
+            )
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"\n{'='*50}")
+        print(f"Result: {result}")
+        print(f"Turns: {turns}")
+
+        if trajectory:
+            final = trajectory[-1]
+            print(f"Final: {model.format_result(final)}")
+
+        if result == 'success':
+            print("\n[OK] SUCCESS!")
+            sys.exit(0)
+        else:
+            print("\n[FAIL] FAILED")
+            print("\nLast 5 states:")
+            for i, s in enumerate(trajectory[-5:]):
+                print(f"  {len(trajectory)-5+i}: {model.format_result(s)}")
+            sys.exit(1)
+
+    elif args.agents:
+        # Multi-agent mode: run programs for each player
+        if len(args.agents) < 2:
+            print("Usage: --agents <program1> [program2] ... <test_case>")
+            print("       Last argument is the test case name")
+            sys.exit(1)
+
+        test_name = args.agents[-1]
+        programs = args.agents[:-1]
+
+        # Parse program commands (split by space if quoted)
+        program_cmds = []
+        for prog in programs:
+            if ' ' in prog:
+                program_cmds.append(prog.split())
+            else:
+                program_cmds.append([prog])
+
+        # Get test case info
+        test_cases = model.get_test_cases()
+        display_name = test_cases.get(test_name, test_name)
+
+        print(f"Model: {model.name}")
+        print(f"Test: {test_name} ({display_name})")
+        print(f"Agents: {len(program_cmds)}")
+        for i, cmd in enumerate(program_cmds):
+            print(f"  P{i}: {' '.join(cmd)}")
+        print()
+
+        try:
+            result, trajectory, turns = runner.run_program_multi(
+                model, program_cmds, test_name, verbose=args.verbose,
                 turn_timeout_ms=args.timeout, debug=args.debug
             )
         except ValueError as e:

@@ -19,6 +19,7 @@ MAX_POWER = 4
 MIN_POWER = 0
 
 TESTS_DIR = Path(__file__).parent.parent / "tests" / "mars_lander"
+TRACES_DIR = Path(__file__).parent.parent / "traces" / "mars_lander"
 
 
 def load_test_cases_from_files() -> dict:
@@ -310,3 +311,18 @@ class MarsLanderModel(GameModel):
 
     def format_result(self, state: State) -> str:
         return f"pos=({state.x}, {state.y}), speed=({state.hSpeed}, {state.vSpeed}), angle={state.rotate}, fuel={state.fuel}"
+
+    def get_traces_dir(self):
+        return TRACES_DIR
+
+    def compare_state(self, state: State, expected: dict) -> List[str]:
+        """Compare state with expected trace entry."""
+        mismatches = []
+
+        exp_state = expected.get("state", [])
+        if exp_state:
+            actual = [state.x, state.y, state.hSpeed, state.vSpeed, state.fuel, state.rotate, state.power]
+            if actual != exp_state:
+                mismatches.append(f"state: got {actual}, expected {exp_state}")
+
+        return mismatches

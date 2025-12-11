@@ -1,0 +1,14 @@
+{
+  "name": "Wood 2 - TENTACLE Combat",
+  "width": 18,
+  "height": 8,
+  "num_players": 2,
+  "entities": [
+    {"x": 0, "y": 3, "type": "ROOT", "owner": 0, "organId": 1, "organDir": "N", "organParentId": 0, "organRootId": 1},
+    {"x": 17, "y": 4, "type": "ROOT", "owner": 1, "organId": 2, "organDir": "N", "organParentId": 0, "organRootId": 2}
+  ],
+  "proteins": {
+    "0": {"A": 50, "B": 50, "C": 50, "D": 0},
+    "1": {"A": 50, "B": 50, "C": 50, "D": 0}
+  }
+}

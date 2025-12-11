@@ -1,3 +1,4 @@
 workbench/
 __pycache__/
 *.pyc
+emulator/traces/

@@ -8,6 +8,7 @@ from .base import GameModel, SimResult
 
 
 TESTS_DIR = Path(__file__).parent.parent / "tests" / "there-is-no-spoon-2"
+TRACES_DIR = Path(__file__).parent.parent / "traces" / "there-is-no-spoon-2"
 
 
 def load_test_cases_from_files() -> dict:
@@ -183,3 +184,18 @@ class ThereIsNoSpoonModel(GameModel):
 
     def format_result(self, state: State) -> str:
         return f"connections={len(state.connections)}, done={state.done}"
+
+    def get_traces_dir(self):
+        return TRACES_DIR
+
+    def compare_state(self, state: State, expected: dict) -> List[str]:
+        """Compare connections with expected trace entry."""
+        mismatches = []
+
+        exp_conns = expected.get("connections", [])
+        if exp_conns:
+            actual = [f"{c[0]} {c[1]} {c[2]} {c[3]} {c[4]}" for c in state.connections]
+            if actual != exp_conns:
+                mismatches.append(f"connections: got {actual}, expected {exp_conns}")
+
+        return mismatches

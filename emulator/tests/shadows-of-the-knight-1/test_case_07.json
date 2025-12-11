@@ -1,0 +1,10 @@
+{
+    "name": "Not there?",
+    "width": 9999,
+    "height": 9999,
+    "max_jumps": 14,
+    "start_x": 54,
+    "start_y": 77,
+    "bomb_x": 3424,
+    "bomb_y": 7082
+}

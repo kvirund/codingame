@@ -59,8 +59,8 @@ ORGAN_TYPES = {"ROOT", "BASIC", "HARVESTER", "TENTACLE", "SPORER"}
 class Control:
     """Player's output command."""
     player_id: int
-    action: str  # WAIT, GROW
-    organ_id: int = 0  # parent organ id for GROW
+    action: str  # WAIT, GROW, SPORE
+    organ_id: int = 0  # parent organ id for GROW, sporer id for SPORE
     x: int = 0
     y: int = 0
     organ_type: str = "BASIC"
@@ -89,6 +89,17 @@ class Control:
                 y=y,
                 organ_type=organ_type,
                 organ_dir=organ_dir
+            )
+        elif parts[0] == "SPORE" and len(parts) >= 4:
+            organ_id = int(parts[1])  # SPORER id
+            x = int(parts[2])
+            y = int(parts[3])
+            return Control(
+                player_id=player_id,
+                action="SPORE",
+                organ_id=organ_id,
+                x=x,
+                y=y
             )
         else:
             raise ValueError(f"Invalid command: {line}")
@@ -194,9 +205,14 @@ class CellularenaModel(GameModel):
 
         # Entities (swap owner perspective for player)
         for e in state.entities:
-            # For player's perspective, 1=me, 0=opponent (if 2 players)
-            # But we keep original owner values for simplicity
-            owner = e.owner
+            # For player's perspective: 1=me, 0=opponent
+            # Remap owner based on player_id
+            if e.owner == -1:
+                owner = -1  # Neutral (proteins, walls)
+            elif e.owner == player_id:
+                owner = 1   # My organ
+            else:
+                owner = 0   # Opponent's organ
             organ_id = e.organ_id if e.organ_id > 0 else 0
             organ_dir = e.organ_dir if e.organ_id > 0 else "X"
             organ_parent = e.organ_parent_id if e.organ_id > 0 else 0
@@ -217,8 +233,13 @@ class CellularenaModel(GameModel):
                 opp_d += p['D']
         lines.append(f"{opp_a} {opp_b} {opp_c} {opp_d}")
 
-        # Required actions count (always 1 for now)
-        lines.append("1")
+        # Required actions count = number of unique organisms for this player
+        organism_roots = set()
+        for e in state.entities:
+            if e.organ_id > 0 and e.type in ORGAN_TYPES and e.owner == player_id:
+                organism_roots.add(e.organ_root_id)
+        required_actions = max(1, len(organism_roots))
+        lines.append(str(required_actions))
 
         return "\n".join(lines)
 
@@ -337,6 +358,163 @@ class CellularenaModel(GameModel):
 
         return new_state, None
 
+    def _apply_spore(
+        self,
+        state: State,
+        control: Control,
+        env: Environment
+    ) -> Tuple[State, Optional[str]]:
+        """Apply SPORE command. Returns (new_state, error_message)."""
+        player_id = control.player_id
+
+        # Find the SPORER organ
+        sporer = self._get_organ_by_id(state.entities, control.organ_id)
+        if sporer is None:
+            return state, f"SPORER {control.organ_id} not found"
+        if sporer.owner != player_id:
+            return state, f"SPORER {control.organ_id} not owned by player {player_id}"
+        if sporer.type != "SPORER":
+            return state, f"Organ {control.organ_id} is not a SPORER"
+
+        # Check target is in line of sight
+        dx, dy = DIR_VECTORS.get(sporer.organ_dir, (0, 0))
+        if dx == 0 and dy == 0:
+            return state, f"Invalid SPORER direction"
+
+        # Target must be along the direction
+        target_x, target_y = control.x, control.y
+        if dx != 0:
+            # Horizontal line
+            if target_y != sporer.y:
+                return state, f"Target ({target_x},{target_y}) not in line of SPORER facing {sporer.organ_dir}"
+            if dx > 0 and target_x <= sporer.x:
+                return state, f"Target ({target_x},{target_y}) not in front of SPORER"
+            if dx < 0 and target_x >= sporer.x:
+                return state, f"Target ({target_x},{target_y}) not in front of SPORER"
+        else:
+            # Vertical line
+            if target_x != sporer.x:
+                return state, f"Target ({target_x},{target_y}) not in line of SPORER facing {sporer.organ_dir}"
+            if dy > 0 and target_y <= sporer.y:
+                return state, f"Target ({target_x},{target_y}) not in front of SPORER"
+            if dy < 0 and target_y >= sporer.y:
+                return state, f"Target ({target_x},{target_y}) not in front of SPORER"
+
+        # Check bounds
+        if target_x < 0 or target_x >= env.width or target_y < 0 or target_y >= env.height:
+            return state, f"Target ({target_x},{target_y}) out of bounds"
+
+        # Check path is clear (no obstacles between sporer and target, excluding target)
+        cx, cy = sporer.x + dx, sporer.y + dy
+        while (cx, cy) != (target_x, target_y):
+            if cx < 0 or cx >= env.width or cy < 0 or cy >= env.height:
+                return state, f"Path to target blocked by bounds"
+            blocker = self._get_entity_at(state.entities, cx, cy)
+            if blocker is not None and blocker.type not in ("A", "B", "C", "D"):
+                return state, f"Path to target blocked at ({cx},{cy})"
+            cx += dx
+            cy += dy
+
+        # Check target cell is empty or protein
+        target = self._get_entity_at(state.entities, target_x, target_y)
+        absorbed_protein = None
+        if target is not None:
+            if target.type == "WALL":
+                return state, f"Cannot spore onto WALL at ({target_x},{target_y})"
+            if target.type in ORGAN_TYPES:
+                return state, f"Cannot spore onto organ at ({target_x},{target_y})"
+            if target.type in ("A", "B", "C", "D"):
+                absorbed_protein = target.type
+
+        # Check protein cost for ROOT (1A + 1B + 1C + 1D)
+        player_proteins = state.proteins[player_id]
+        cost = {"A": 1, "B": 1, "C": 1, "D": 1}
+        for ptype, amount in cost.items():
+            if player_proteins.get(ptype, 0) < amount:
+                return state, f"Not enough {ptype} protein for ROOT (need {amount}, have {player_proteins.get(ptype, 0)})"
+
+        # Apply the SPORE
+        new_entities = [e for e in state.entities]
+
+        # Remove absorbed protein source
+        if absorbed_protein:
+            new_entities = [e for e in new_entities if not (e.x == target_x and e.y == target_y)]
+
+        # Create new ROOT (no parent, is its own root)
+        new_root = Entity(
+            x=target_x,
+            y=target_y,
+            type="ROOT",
+            owner=player_id,
+            organ_id=state.next_organ_id,
+            organ_dir="N",
+            organ_parent_id=0,  # ROOT has no parent
+            organ_root_id=state.next_organ_id  # ROOT is its own root
+        )
+        new_entities.append(new_root)
+
+        # Update proteins
+        new_proteins = {p: v.copy() for p, v in state.proteins.items()}
+        for ptype, amount in cost.items():
+            new_proteins[player_id][ptype] -= amount
+
+        # Add absorbed protein (+3)
+        if absorbed_protein:
+            new_proteins[player_id][absorbed_protein] += 3
+
+        new_state = State(
+            entities=new_entities,
+            proteins=new_proteins,
+            next_organ_id=state.next_organ_id + 1,
+            turn=state.turn
+        )
+
+        return new_state, None
+
+    def _apply_tentacle_attacks(self, state: State, env: Environment) -> State:
+        """Apply TENTACLE attack phase - TENTACLEs destroy facing enemy organs."""
+        # Collect all tentacle attacks
+        attacks = []  # list of (attacker_owner, target_x, target_y)
+
+        for e in state.entities:
+            if e.type == "TENTACLE" and e.owner >= 0:
+                dx, dy = DIR_VECTORS.get(e.organ_dir, (0, 0))
+                target_x, target_y = e.x + dx, e.y + dy
+                attacks.append((e.owner, target_x, target_y))
+
+        if not attacks:
+            return state
+
+        # Find all organs to destroy (attacked organs + their children)
+        organs_to_destroy = set()
+
+        for attacker_owner, target_x, target_y in attacks:
+            target = self._get_entity_at(state.entities, target_x, target_y)
+            if target and target.type in ORGAN_TYPES and target.owner != attacker_owner and target.owner >= 0:
+                # Mark this organ and all its children for destruction
+                self._mark_organ_tree(state.entities, target.organ_id, organs_to_destroy)
+
+        if not organs_to_destroy:
+            return state
+
+        # Remove destroyed organs
+        new_entities = [e for e in state.entities if e.organ_id not in organs_to_destroy]
+
+        return State(
+            entities=new_entities,
+            proteins=state.proteins,
+            next_organ_id=state.next_organ_id,
+            turn=state.turn
+        )
+
+    def _mark_organ_tree(self, entities: List[Entity], organ_id: int, marked: set):
+        """Mark an organ and all its children for destruction."""
+        marked.add(organ_id)
+        # Find all children
+        for e in entities:
+            if e.organ_parent_id == organ_id and e.organ_id not in marked:
+                self._mark_organ_tree(entities, e.organ_id, marked)
+
     def _apply_harvest(self, state: State, env: Environment) -> State:
         """Apply harvest phase - HARVESTERs collect proteins from facing sources."""
         new_proteins = {p: v.copy() for p, v in state.proteins.items()}
@@ -375,27 +553,75 @@ class CellularenaModel(GameModel):
     def simulate(
         self,
         state: State,
-        controls: List[Control],
+        controls,  # Can be List[Control] or single Control
         env: Environment
     ) -> Tuple[State, SimResult]:
         """Simulate one turn with commands from all players."""
         current_state = state
 
-        # Apply controls in order (P0, P1, P2, P3)
+        # Handle single control (from run_program for single agent testing)
+        if not isinstance(controls, list):
+            controls = [controls]
+
+        # Phase 1: Collect GROW targets and detect collisions
+        grow_targets = {}  # (x, y) -> list of (control, player_id)
+        valid_grows = []
+
         for control in controls:
-            if control is None:
+            if control is None or control.action != "GROW":
                 continue
 
-            if control.action == "WAIT":
-                continue
-            elif control.action == "GROW":
-                current_state, error = self._apply_grow(current_state, control, env)
-                if error:
-                    # Log error but continue (invalid command = skip)
-                    pass
+            target_pos = (control.x, control.y)
+            if target_pos not in grow_targets:
+                grow_targets[target_pos] = []
+            grow_targets[target_pos].append(control)
 
-        # Apply harvest phase at end of turn
+        # Phase 2: Handle collisions - when multiple players grow to same cell, create WALL
+        collision_positions = set()
+        for pos, grow_controls in grow_targets.items():
+            if len(grow_controls) > 1:
+                # Collision detected - both fail, WALL appears
+                collision_positions.add(pos)
+            else:
+                valid_grows.append(grow_controls[0])
+
+        # Create WALLs at collision positions
+        if collision_positions:
+            new_entities = list(current_state.entities)
+            for pos in collision_positions:
+                # Check if cell is empty (can create wall)
+                existing = self._get_entity_at(new_entities, pos[0], pos[1])
+                if existing is None:
+                    wall = Entity(x=pos[0], y=pos[1], type="WALL", owner=-1)
+                    new_entities.append(wall)
+            current_state = State(
+                entities=new_entities,
+                proteins=current_state.proteins,
+                next_organ_id=current_state.next_organ_id,
+                turn=current_state.turn
+            )
+
+        # Phase 3: Apply valid GROW commands
+        for control in valid_grows:
+            current_state, error = self._apply_grow(current_state, control, env)
+            if error:
+                # Log error but continue (invalid command = skip)
+                pass
+
+        # Phase 3.5: Apply SPORE commands
+        for control in controls:
+            if control is None or control.action != "SPORE":
+                continue
+            current_state, error = self._apply_spore(current_state, control, env)
+            if error:
+                # Log error but continue (invalid command = skip)
+                pass
+
+        # Phase 4: Apply harvest phase
         current_state = self._apply_harvest(current_state, env)
+
+        # Phase 5: Apply TENTACLE attacks
+        current_state = self._apply_tentacle_attacks(current_state, env)
 
         # Update turn
         new_state = State(
@@ -411,7 +637,7 @@ class CellularenaModel(GameModel):
 
         # Check if all players did WAIT (no progress)
         all_wait = all(c is None or c.action == "WAIT" for c in controls)
-        if all_wait and state.turn > 0:
+        if all_wait and state.turn > 5:  # Allow at least 5 turns before stopping
             return new_state, SimResult('success', 'No progress - all WAIT')
 
         return new_state, SimResult('running')
@@ -423,6 +649,14 @@ class CellularenaModel(GameModel):
 
     def get_traces_dir(self):
         return TRACES_DIR
+
+    def get_required_actions(self, state: State, player_id: int = 0) -> int:
+        """Return number of actions expected from player each turn."""
+        organism_roots = set()
+        for e in state.entities:
+            if e.organ_id > 0 and e.type in ORGAN_TYPES and e.owner == player_id:
+                organism_roots.add(e.organ_root_id)
+        return max(1, len(organism_roots))
 
     def compare_state(self, state: State, expected: dict) -> List[str]:
         """Compare state with expected trace entry."""

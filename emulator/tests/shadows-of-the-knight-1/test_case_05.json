@@ -1,0 +1,10 @@
+{
+    "name": "Correct cutting",
+    "width": 50,
+    "height": 50,
+    "max_jumps": 6,
+    "start_x": 0,
+    "start_y": 0,
+    "bomb_x": 22,
+    "bomb_y": 22
+}

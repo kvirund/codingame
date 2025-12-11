@@ -1,0 +1,51 @@
+{
+  "name": "Silver League - Low Resources",
+  "width": 24,
+  "height": 12,
+  "num_players": 2,
+  "entities": [
+    {"x": 0, "y": 5, "type": "ROOT", "owner": 1, "organId": 1, "organDir": "N", "organParentId": 0, "organRootId": 1},
+    {"x": 23, "y": 6, "type": "ROOT", "owner": 0, "organId": 2, "organDir": "N", "organParentId": 0, "organRootId": 2},
+
+    {"x": 3, "y": 1, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 4, "y": 1, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 8, "y": 2, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 9, "y": 2, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 14, "y": 3, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 15, "y": 3, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 19, "y": 4, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 20, "y": 4, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 5, "y": 6, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 6, "y": 6, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 10, "y": 7, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 11, "y": 7, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 16, "y": 8, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 17, "y": 8, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 21, "y": 9, "type": "WALL", "owner": -1, "organId": 0},
+    {"x": 22, "y": 9, "type": "WALL", "owner": -1, "organId": 0},
+
+    {"x": 2, "y": 2, "type": "A", "owner": -1, "organId": 0},
+    {"x": 7, "y": 1, "type": "B", "owner": -1, "organId": 0},
+    {"x": 12, "y": 2, "type": "C", "owner": -1, "organId": 0},
+    {"x": 17, "y": 1, "type": "D", "owner": -1, "organId": 0},
+    {"x": 21, "y": 2, "type": "A", "owner": -1, "organId": 0},
+
+    {"x": 1, "y": 5, "type": "D", "owner": -1, "organId": 0},
+    {"x": 4, "y": 4, "type": "A", "owner": -1, "organId": 0},
+    {"x": 8, "y": 5, "type": "B", "owner": -1, "organId": 0},
+    {"x": 12, "y": 5, "type": "C", "owner": -1, "organId": 0},
+    {"x": 16, "y": 5, "type": "A", "owner": -1, "organId": 0},
+    {"x": 20, "y": 5, "type": "D", "owner": -1, "organId": 0},
+
+    {"x": 2, "y": 8, "type": "B", "owner": -1, "organId": 0},
+    {"x": 6, "y": 9, "type": "C", "owner": -1, "organId": 0},
+    {"x": 11, "y": 10, "type": "A", "owner": -1, "organId": 0},
+    {"x": 15, "y": 9, "type": "D", "owner": -1, "organId": 0},
+    {"x": 19, "y": 10, "type": "A", "owner": -1, "organId": 0},
+    {"x": 22, "y": 8, "type": "B", "owner": -1, "organId": 0}
+  ],
+  "proteins": {
+    "0": {"A": 3, "B": 4, "C": 5, "D": 8},
+    "1": {"A": 3, "B": 4, "C": 5, "D": 8}
+  }
+}

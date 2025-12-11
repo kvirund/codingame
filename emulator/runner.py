@@ -100,28 +100,38 @@ def run_program(
                 except OSError:
                     pass  # Process may have exited
 
-            # Get control output with timeout
-            control_line = readline_with_timeout(proc.stdout, turn_timeout_ms)
+            # Get number of expected actions
+            required_actions = model.get_required_actions(state, player_id=0)
 
-            if control_line is None:
-                # Timeout
-                return f'timeout: turn {turn} exceeded {turn_timeout_ms}ms', trajectory, turn
+            # Get control outputs with timeout
+            controls = []
+            for action_idx in range(required_actions):
+                control_line = readline_with_timeout(proc.stdout, turn_timeout_ms)
 
-            control_line = control_line.strip()
-            if not control_line:
-                return 'program_error', trajectory, turn
+                if control_line is None:
+                    # Timeout
+                    return f'timeout: turn {turn} action {action_idx} exceeded {turn_timeout_ms}ms', trajectory, turn
 
-            try:
-                control = model.parse_output(control_line)
-            except (ValueError, IndexError) as e:
-                print(f"Invalid output: '{control_line}' - {e}", file=sys.stderr)
-                return 'invalid_output', trajectory, turn
+                control_line = control_line.strip()
+                if not control_line:
+                    return 'program_error', trajectory, turn
 
-            if verbose:
-                print(f"T{turn}: {model.format_result(state)} -> {control_line}")
+                try:
+                    control = model.parse_output(control_line)
+                    control.player_id = 0  # Single player mode
+                    controls.append(control)
+                except (ValueError, IndexError) as e:
+                    print(f"Invalid output: '{control_line}' - {e}", file=sys.stderr)
+                    return 'invalid_output', trajectory, turn
 
-            # Simulate
-            state, result = model.simulate(state, control, env)
+                if verbose:
+                    if action_idx == 0:
+                        print(f"T{turn}: {model.format_result(state)} -> {control_line}")
+                    else:
+                        print(f"     {' ' * len(model.format_result(state))} -> {control_line}")
+
+            # Simulate all controls at once
+            state, result = model.simulate(state, controls, env)
             trajectory.append(state)
 
             if result.status == 'success':
@@ -141,6 +151,141 @@ def run_program(
             proc.wait(timeout=1)
         except subprocess.TimeoutExpired:
             proc.kill()
+
+
+def run_program_multi(
+    model: GameModel,
+    program_cmds: List[List[str]],
+    test_name: str,
+    max_turns: int = 100,
+    verbose: bool = False,
+    turn_timeout_ms: int = 150,
+    debug: bool = False
+) -> Tuple[str, List[Any], int]:
+    """
+    Run multiple programs (one per player) in a multi-agent game.
+
+    Args:
+        model: Game model to use
+        program_cmds: List of commands for each player. If fewer than num_players,
+                      last command is reused for remaining players.
+        test_name: Name of the test case
+        max_turns: Maximum number of turns
+        verbose: Print debug output
+        turn_timeout_ms: Timeout per turn in milliseconds
+        debug: Print stderr from programs
+
+    Returns: (result_status, trajectory, turns_used)
+    """
+    env, initial_state = model.load_test_case(test_name)
+
+    # Determine number of players from model/env
+    num_players = getattr(env, 'num_players', 2)
+
+    # Expand program_cmds to match num_players
+    while len(program_cmds) < num_players:
+        program_cmds.append(program_cmds[-1])
+
+    # Start one process per player
+    procs = []
+    for pid in range(num_players):
+        proc = subprocess.Popen(
+            program_cmds[pid],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1
+        )
+        procs.append(proc)
+
+        # Start stderr reader thread
+        def make_stderr_reader(p, player_id):
+            def reader():
+                try:
+                    for line in p.stderr:
+                        if debug:
+                            print(f"[P{player_id}] {line}", end='', file=sys.stderr)
+                except:
+                    pass
+            return reader
+
+        t = threading.Thread(target=make_stderr_reader(proc, pid), daemon=True)
+        t.start()
+
+    try:
+        # Send initialization input to all players
+        init_lines = model.format_init_input(env)
+        for proc in procs:
+            for line in init_lines:
+                proc.stdin.write(line + "\n")
+            proc.stdin.flush()
+
+        state = initial_state
+        trajectory = [state]
+
+        for turn in range(max_turns):
+            controls = []
+
+            # Get command from each player
+            for pid, proc in enumerate(procs):
+                # Send turn input (with player perspective)
+                turn_input = model.format_turn_input(state, player_id=pid)
+                if turn_input:
+                    try:
+                        proc.stdin.write(turn_input + "\n")
+                        proc.stdin.flush()
+                    except OSError:
+                        controls.append(None)
+                        continue
+
+                # Get output
+                control_line = readline_with_timeout(proc.stdout, turn_timeout_ms)
+
+                if control_line is None:
+                    return f'timeout: P{pid} turn {turn} exceeded {turn_timeout_ms}ms', trajectory, turn
+
+                control_line = control_line.strip()
+                if not control_line:
+                    controls.append(None)
+                    continue
+
+                try:
+                    control = model.parse_output(control_line)
+                    control.player_id = pid
+                    controls.append(control)
+
+                    if verbose:
+                        print(f"T{turn} P{pid}: {control_line}")
+                except (ValueError, IndexError) as e:
+                    print(f"P{pid} Invalid output: '{control_line}' - {e}", file=sys.stderr)
+                    controls.append(None)
+
+            # Simulate all controls
+            state, result = model.simulate(state, controls, env)
+            trajectory.append(state)
+
+            if verbose:
+                print(f"  -> {model.format_result(state)}")
+
+            if result.status == 'success':
+                return 'success', trajectory, turn + 1
+            elif result.status == 'failure':
+                return f'failure: {result.reason}', trajectory, turn + 1
+
+        return 'max_turns_exceeded', trajectory, max_turns
+
+    finally:
+        for proc in procs:
+            try:
+                proc.stdin.close()
+            except OSError:
+                pass
+            proc.terminate()
+            try:
+                proc.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                proc.kill()
 
 
 def run_replay(

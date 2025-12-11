@@ -1,0 +1,10 @@
+{
+    "name": "Evasive",
+    "width": 100,
+    "height": 100,
+    "max_jumps": 7,
+    "start_x": 5,
+    "start_y": 98,
+    "bomb_x": 0,
+    "bomb_y": 1
+}
